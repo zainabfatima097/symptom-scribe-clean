@@ -12,15 +12,6 @@ const Index = () => {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
   useEffect(() => {
-    // Check if user is logged in and redirect to dashboard
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-  }, [navigate]);
-
-  useEffect(() => {
     const interval = setInterval(() => {
       setActiveTestimonial((prev) => (prev + 1) % 3);
     }, 5000);

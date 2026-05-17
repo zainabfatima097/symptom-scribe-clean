@@ -52,7 +52,13 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
-        {!isCollapsed && <h2 className="text-lg font-semibold text-sidebar-foreground">Health Tracker</h2>}
+        <NavLink to="/" className="flex items-center">
+          {!isCollapsed && (
+            <h2 className="text-lg font-semibold text-sidebar-foreground cursor-pointer">
+              Health Tracker
+            </h2>
+          )}
+        </NavLink>
         <SidebarTrigger />
       </div>
 
