@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -327,7 +327,7 @@ const Index = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="container mx-auto py-20 px-4">
+      <section id="faq" className="container mx-auto py-20 px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -431,27 +431,27 @@ const Index = () => {
             <div>
               <h4 className="font-semibold mb-3">Features</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">AI Analysis</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Health Tracking</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Brain Games</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Emergency Help</a></li>
+                <li><Link to="/chat" className="hover:text-primary transition-colors">AI Analysis</Link></li>
+                <li><Link to="/dashboard" className="hover:text-primary transition-colors">Health Tracking</Link></li>
+                <li><Link to="/brain-games" className="hover:text-primary transition-colors">Brain Games</Link></li>
+                <li><Link to="/emergency" className="hover:text-primary transition-colors">Emergency Help</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-3">Resources</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">Health Facts</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">FAQ</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
+                <li><Link to="/health-facts" className="hover:text-primary transition-colors">Health Facts</Link></li>
+                <li><a href="#faq" className="hover:text-primary transition-colors">FAQ</a></li>
+                <li><Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-3">Contact</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">Support</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Feedback</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
+                <li><Link to="/support" className="hover:text-primary transition-colors">Support</Link></li>
+                <li><Link to="/feedback" className="hover:text-primary transition-colors">Feedback</Link></li>
+                <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
               </ul>
             </div>
           </div>
