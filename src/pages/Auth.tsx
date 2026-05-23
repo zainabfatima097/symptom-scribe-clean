@@ -9,21 +9,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Activity, Loader2 } from "lucide-react";
 import { z } from "zod";
-import { showSuccess, showError } from "@/lib/toast-helpers";
-import { PasswordStrengthMeter } from "@/components/PasswordStrengthMeter";
-import {
-  evaluatePasswordStrength,
-  DEFAULT_PASSWORD_POLICY,
-} from "@/lib/password-strength";
+import { showError } from "@/lib/toast-helpers";
+import MultiStepSignUp from "@/components/registration/MultiStepSignUp";
 
 const emailSchema = z.string().email("Invalid email address");
 const signinPasswordSchema = z.string().min(1, "Password is required");
-const signupPasswordSchema = z.string().min(12, "Password must be at least 12 characters");
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -45,25 +39,10 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const validateInputs = (includeFullName: boolean = false, checkPasswordStrength: boolean = false) => {
+  const validateInputs = () => {
     try {
       emailSchema.parse(email);
-      
-      // Use appropriate password schema based on context
-      const passwordSchemaToUse = checkPasswordStrength ? signupPasswordSchema : signinPasswordSchema;
-      passwordSchemaToUse.parse(password);
-      
-      // Check password strength for signup
-      if (checkPasswordStrength) {
-        const strength = evaluatePasswordStrength(password, DEFAULT_PASSWORD_POLICY);
-        if (!strength.isStrong) {
-          throw new Error("Password does not meet strength requirements. Please check all requirements.");
-        }
-      }
-      
-      if (includeFullName && !fullName.trim()) {
-        throw new Error("Full name is required");
-      }
+      signinPasswordSchema.parse(password);
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -95,41 +74,6 @@ const Auth = () => {
 
     if (error) {
       showError("Sign In Failed", error.message);
-    }
-    setLoading(false);
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateInputs(true, true)) return;
-
-    setLoading(true);
-    const redirectUrl = `${window.location.origin}/dashboard`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-
-    if (error) {
-      showError("Sign Up Failed", error.message);
-    } else {
-      // Create profile entry
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from("profiles").insert({
-          user_id: user.id,
-          full_name: fullName,
-        });
-      }
-      
-      showSuccess("Account Created!", "You can now sign in with your credentials.");
     }
     setLoading(false);
   };
@@ -190,49 +134,7 @@ const Auth = () => {
             </TabsContent>
             
             <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <PasswordStrengthMeter
-                  value={password}
-                  onChange={setPassword}
-                  label="Password"
-                  placeholder="Create a strong password"
-                  policy={DEFAULT_PASSWORD_POLICY}
-                  showGenerator={true}
-                  id="signup-password"
-                />
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    "Create Account"
-                  )}
-                </Button>
-              </form>
+              <MultiStepSignUp />
             </TabsContent>
           </Tabs>
         </CardContent>
