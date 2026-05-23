@@ -20,7 +20,7 @@ const BrainGames = () => {
   const [memoryCards, setMemoryCards] = useState<number[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [matchedCards, setMatchedCards] = useState<number[]>([]);
-  const [mathQuestion, setMathQuestion] = useState({ num1: 0, num2: 0, answer: 0 });
+  const [mathQuestion, setMathQuestion] = useState({ num1: 0, num2: 0, answer: "" });
   const [mathScore, setMathScore] = useState(0);
   const [wordSequence, setWordSequence] = useState<string[]>([]);
   const [userSequence, setUserSequence] = useState<{ word: string; index: number }[]>([]);
@@ -307,7 +307,7 @@ const BrainGames = () => {
   const generateMathQuestion = () => {
     const num1 = Math.floor(Math.random() * 50) + 10;
     const num2 = Math.floor(Math.random() * 50) + 10;
-    setMathQuestion({ num1, num2, answer: 0 });
+    setMathQuestion({ num1, num2, answer: "" });
   };
 
   const handleCardClick = (index: number) => {
@@ -344,7 +344,8 @@ const BrainGames = () => {
 
   const checkMathAnswer = () => {
     const correct = mathQuestion.num1 + mathQuestion.num2;
-    if (mathQuestion.answer === correct) {
+    const userAnswer = parseInt(mathQuestion.answer);
+    if (userAnswer === correct) {
       const newScore = mathScore + 1;
       setMathScore(newScore);
       showSuccess("✓ Correct! ✓", `Score: ${newScore}`);
@@ -360,6 +361,7 @@ const BrainGames = () => {
         description: `The answer was ${correct}`,
         variant: "destructive",
       });
+      generateMathQuestion();
     }
   };
 
@@ -659,8 +661,8 @@ const BrainGames = () => {
               <div className="flex gap-4 items-center justify-center max-w-md mx-auto">
                 <input
                   type="number"
-                  value={mathQuestion.answer || ""}
-                  onChange={(e) => setMathQuestion({ ...mathQuestion, answer: parseInt(e.target.value) || 0 })}
+                  value={mathQuestion.answer ?? ""}
+                  onChange={(e) => setMathQuestion({ ...mathQuestion, answer: e.target.value})}
                   onKeyPress={(e) => e.key === "Enter" && checkMathAnswer()}
                   className="flex-1 px-4 py-3 text-2xl text-center border-2 border-border rounded-xl bg-background focus:outline-none focus:border-primary"
                   placeholder="?"

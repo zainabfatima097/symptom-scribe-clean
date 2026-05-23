@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Activity, Heart, Thermometer, Weight, Droplet, Wind } from "lucide-react";
+import { Activity, Heart, Thermometer, Weight, Droplet, Wind, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { showSuccess, showError } from "@/lib/toast-helpers";
 import { useMetricsHistory } from "@/hooks/useMetricsHistory";
 import {
@@ -55,6 +55,14 @@ const metricTypes = [
   { value: "oxygen_saturation", label: "Oxygen Saturation", icon: Wind, unit: "%" },
 ];
 
+interface MetricEntry {
+  id: string;
+  metric_type: string;
+  value: any;
+  notes: string | null;
+  recorded_at: string;
+}
+
 const Metrics = () => {
   const [metricType, setMetricType] = useState("");
   const [value, setValue] = useState("");
@@ -62,6 +70,8 @@ const Metrics = () => {
   const [diastolic, setDiastolic] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState<MetricEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const { toast } = useToast();
   const [historyUserId, setHistoryUserId] = useState("");
 
@@ -92,7 +102,10 @@ const Metrics = () => {
   useState("table");
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!metricType || (!value && metricType !== "blood_pressure")) return;
+
+    if (!metricType) return;
+    if (metricType === "blood_pressure" && (!systolic || !diastolic)) return;
+    if (metricType !== "blood_pressure" && !value) return;
 
     setLoading(true);
     try {
@@ -115,7 +128,7 @@ const Metrics = () => {
 
       if (error) throw error;
 
-      const metricLabel = metricTypes.find(m => m.value === metricType)?.label;
+      const metricLabel = metricTypes.find((m) => m.value === metricType)?.label;
       showSuccess(`${metricLabel} Recorded`, "Your health metric has been saved successfully.");
 
       // Reset form
@@ -123,6 +136,9 @@ const Metrics = () => {
       setSystolic("");
       setDiastolic("");
       setNotes("");
+
+      // Refresh history to show the new entry with trend
+      fetchHistory();
     } catch (error) {
       console.error("Error saving metric:", error);
       showError("Failed to Save", "Could not record your health metric");
