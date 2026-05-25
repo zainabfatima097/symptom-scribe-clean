@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import Emergency from "./pages/Emergency";
 import BrainGames from "./pages/BrainGames";
 import HealthFacts from "./pages/HealthFacts";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";

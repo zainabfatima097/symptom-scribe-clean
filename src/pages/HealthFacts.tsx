@@ -1,147 +1,156 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, RefreshCw, BookOpen, Heart, Brain, Dna } from "lucide-react";
+import { Sparkles, RefreshCw, BookOpen, Heart, Brain, Dna, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { showSuccess, showInfo } from "@/lib/toast-helpers";
+import { showSuccess, showInfo, showError } from "@/lib/toast-helpers";
 
 interface HealthFact {
   category: string;
+  title: string;
   fact: string;
-  icon: typeof Heart;
-  color: string;
+  fullUrl: string;
+  thumbnail?: string;
 }
+
+// Curated list of real Wikipedia health topics — each maps to a valid article
+const HEALTH_TOPICS: { topic: string; category: string }[] = [
+  { topic: "Cardiovascular_disease", category: "Cardiovascular" },
+  { topic: "Human_brain", category: "Neuroscience" },
+  { topic: "Immune_system", category: "Immunology" },
+  { topic: "DNA", category: "Genetics" },
+  { topic: "Sleep", category: "Sleep Science" },
+  { topic: "Gut_microbiota", category: "Microbiome" },
+  { topic: "Metabolism", category: "Metabolism" },
+  { topic: "Insulin", category: "Endocrinology" },
+  { topic: "Lung", category: "Respiratory" },
+  { topic: "Neuron", category: "Neuroscience" },
+  { topic: "Vitamin_D", category: "Nutrition" },
+  { topic: "Cortisol", category: "Hormones" },
+  { topic: "Stem_cell", category: "Cell Biology" },
+  { topic: "Alzheimer%27s_disease", category: "Neurodegeneration" },
+  { topic: "Cancer", category: "Oncology" },
+  { topic: "Mitochondrion", category: "Cell Biology" },
+  { topic: "Dopamine", category: "Neuroscience" },
+  { topic: "Telomere", category: "Ageing Biology" },
+  { topic: "Protein", category: "Biochemistry" },
+  { topic: "Lymph_node", category: "Immunology" },
+  { topic: "Serotonin", category: "Mental Health" },
+  { topic: "Cholesterol", category: "Cardiovascular" },
+  { topic: "Vaccination", category: "Immunology" },
+  { topic: "Antibiotic", category: "Pharmacology" },
+  { topic: "Type_2_diabetes", category: "Endocrinology" },
+  { topic: "Hypertension", category: "Cardiovascular" },
+  { topic: "Bone_marrow", category: "Haematology" },
+  { topic: "Retina", category: "Vision" },
+  { topic: "Kidney", category: "Nephrology" },
+  { topic: "Liver", category: "Hepatology" },
+  { topic: "CRISPR", category: "Genetic Research" },
+  { topic: "Melatonin", category: "Sleep Science" },
+  { topic: "Endorphins", category: "Mental Health" },
+  { topic: "Placebo", category: "Medical Research" },
+  { topic: "Microplastics", category: "Environmental Health" },
+];
+
+const getCategoryStyle = (category: string): string => {
+  const c = category.toLowerCase();
+  if (c.includes("cardio") || c.includes("heart")) return "from-red-500 to-pink-500";
+  if (c.includes("brain") || c.includes("neuro") || c.includes("sleep") || c.includes("mental") || c.includes("dopamine") || c.includes("serotonin")) return "from-purple-500 to-indigo-500";
+  if (c.includes("gene") || c.includes("dna") || c.includes("cancer") || c.includes("microbiome") || c.includes("cell") || c.includes("crispr")) return "from-blue-500 to-cyan-500";
+  if (c.includes("nutrition") || c.includes("diet") || c.includes("gut") || c.includes("metabol") || c.includes("protein") || c.includes("biochem")) return "from-green-500 to-emerald-500";
+  if (c.includes("bone") || c.includes("muscle") || c.includes("haem") || c.includes("blood")) return "from-orange-500 to-yellow-500";
+  if (c.includes("immune") || c.includes("skin") || c.includes("hormon") || c.includes("endocrin")) return "from-teal-500 to-green-500";
+  if (c.includes("research") || c.includes("pharma") || c.includes("placebo")) return "from-blue-500 to-indigo-500";
+  if (c.includes("vision") || c.includes("eye")) return "from-amber-500 to-orange-500";
+  if (c.includes("respirat") || c.includes("lung")) return "from-cyan-500 to-blue-500";
+  if (c.includes("ageing") || c.includes("environment")) return "from-fuchsia-500 to-purple-500";
+  return "from-primary to-primary-glow";
+};
+
+const getCategoryIcon = (category: string) => {
+  const c = category.toLowerCase();
+  if (c.includes("brain") || c.includes("neuro") || c.includes("mental") || c.includes("dopamine") || c.includes("serotonin")) return Brain;
+  if (c.includes("gene") || c.includes("dna") || c.includes("cell") || c.includes("crispr")) return Dna;
+  if (c.includes("research") || c.includes("vision") || c.includes("pharma") || c.includes("placebo")) return BookOpen;
+  if (c.includes("ageing") || c.includes("environment")) return Sparkles;
+  return Heart;
+};
+
+// Tracks shown topic indices this session so no topic repeats until all are exhausted
+const shownIndices = new Set<number>();
 
 const HealthFacts = () => {
   const [currentFact, setCurrentFact] = useState<HealthFact | null>(null);
   const [factHistory, setFactHistory] = useState<HealthFact[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const healthFacts: HealthFact[] = [
-    {
-      category: "Cardiovascular",
-      fact: "Your heart beats about 100,000 times per day, pumping approximately 2,000 gallons of blood throughout your body.",
-      icon: Heart,
-      color: "from-red-500 to-pink-500"
-    },
-    {
-      category: "Neuroscience",
-      fact: "The human brain contains approximately 86 billion neurons, and each neuron can form thousands of connections with other neurons.",
-      icon: Brain,
-      color: "from-purple-500 to-indigo-500"
-    },
-    {
-      category: "Genetics",
-      fact: "Humans share about 99.9% of their DNA with each other, but share 60% with bananas and 98.8% with chimpanzees.",
-      icon: Dna,
-      color: "from-blue-500 to-cyan-500"
-    },
-    {
-      category: "Immunology",
-      fact: "Your immune system produces about 25 million new cells every second to replace dying cells and fight infections.",
-      icon: Heart,
-      color: "from-green-500 to-emerald-500"
-    },
-    {
-      category: "Anatomy",
-      fact: "The smallest bone in your body is in your ear (the stapes), measuring only 2.8mm, while the largest is the femur in your thigh.",
-      icon: BookOpen,
-      color: "from-orange-500 to-yellow-500"
-    },
-    {
-      category: "Metabolism",
-      fact: "Your liver performs over 500 different functions, including filtering over 1.4 liters of blood every minute.",
-      icon: Heart,
-      color: "from-teal-500 to-green-500"
-    },
-    {
-      category: "Respiratory",
-      fact: "The surface area of your lungs is approximately 70 square meters - about the size of a tennis court!",
-      icon: Brain,
-      color: "from-sky-500 to-blue-500"
-    },
-    {
-      category: "Microbiome",
-      fact: "Your body contains more bacterial cells than human cells - about 38 trillion bacteria compared to 30 trillion human cells.",
-      icon: Dna,
-      color: "from-violet-500 to-purple-500"
-    },
-    {
-      category: "Sleep Science",
-      fact: "During REM sleep, your brain is as active as when you're awake. This is when most dreaming occurs and memories are consolidated.",
-      icon: Brain,
-      color: "from-indigo-500 to-blue-500"
-    },
-    {
-      category: "Nutrition",
-      fact: "Your body can produce 11 of the 20 amino acids it needs. The remaining 9 'essential amino acids' must come from your diet.",
-      icon: Heart,
-      color: "from-lime-500 to-green-500"
-    },
-    {
-      category: "Vision",
-      fact: "Your eyes can distinguish approximately 10 million different colors and can detect a single photon of light in complete darkness.",
-      icon: BookOpen,
-      color: "from-amber-500 to-orange-500"
-    },
-    {
-      category: "Bone Health",
-      fact: "Your bones are continuously being broken down and rebuilt. You get a completely new skeleton approximately every 10 years.",
-      icon: Dna,
-      color: "from-stone-500 to-gray-500"
-    },
-    {
-      category: "Hydration",
-      fact: "Water makes up about 60% of your body weight. Your brain and heart are composed of 73% water, and your lungs are about 83% water.",
-      icon: Heart,
-      color: "from-cyan-500 to-blue-500"
-    },
-    {
-      category: "Mental Health",
-      fact: "Regular exercise can be as effective as antidepressants for treating mild to moderate depression, thanks to endorphin release.",
-      icon: Brain,
-      color: "from-rose-500 to-pink-500"
-    },
-    {
-      category: "Recent Discovery",
-      fact: "Scientists recently discovered the interstitium - a network of fluid-filled spaces in tissues that may be the body's largest organ.",
-      icon: Sparkles,
-      color: "from-fuchsia-500 to-purple-500"
-    },
-    {
-      category: "COVID-19",
-      fact: "Long COVID can affect multiple organ systems. Recent research shows symptoms may persist due to viral reservoirs and immune dysregulation.",
-      icon: Heart,
-      color: "from-red-500 to-rose-500"
-    },
-    {
-      category: "Cancer Research",
-      fact: "mRNA technology (like in COVID vaccines) is now being tested for cancer treatment, teaching immune cells to recognize cancer cells.",
-      icon: Dna,
-      color: "from-emerald-500 to-teal-500"
-    },
-    {
-      category: "AI in Medicine",
-      fact: "AI can now detect certain cancers earlier than human doctors by analyzing medical images with over 95% accuracy.",
-      icon: Brain,
-      color: "from-blue-500 to-indigo-500"
+  const fetchFact = async (isInitial = false) => {
+    setLoading(true);
+    setError(null);
+
+    // Reset pool when all topics have been shown
+    if (shownIndices.size >= HEALTH_TOPICS.length) {
+      shownIndices.clear();
+      if (!isInitial) showInfo("All topics covered!", "Starting a fresh cycle.");
     }
-  ];
 
-  const getRandomFact = () => {
-    const randomIndex = Math.floor(Math.random() * healthFacts.length);
-    const fact = healthFacts[randomIndex];
-    setCurrentFact(fact);
-    setFactHistory([fact, ...factHistory.slice(0, 9)]);
-    
-    // Show toast when new fact loads
-    showSuccess("New Health Fact!", `Discovering ${fact.category}`);
+    // Pick from topics not yet shown this cycle
+    const remaining = HEALTH_TOPICS
+      .map((_, i) => i)
+      .filter((i) => !shownIndices.has(i));
+    const pick = remaining[Math.floor(Math.random() * remaining.length)];
+    shownIndices.add(pick);
+
+    const { topic, category } = HEALTH_TOPICS[pick];
+
+    try {
+      const res = await fetch(
+        `https://en.wikipedia.org/api/rest_v1/page/summary/${topic}`,
+        { headers: { "Accept": "application/json" } }
+      );
+
+      if (!res.ok) throw new Error(`Wikipedia returned ${res.status}`);
+
+      const data = await res.json();
+
+      // Wikipedia summaries can be long — take the first 2 sentences max
+      const sentences = data.extract?.match(/[^.!?]+[.!?]+/g) ?? [];
+      const fact = sentences.slice(0, 2).join(" ").trim() || data.extract;
+
+      if (!fact) throw new Error("Empty extract from Wikipedia");
+
+      const factObj: HealthFact = {
+        category,
+        title: data.title,
+        fact,
+        fullUrl: data.content_urls?.desktop?.page ?? `https://en.wikipedia.org/wiki/${topic}`,
+        thumbnail: data.thumbnail?.source,
+      };
+
+      setCurrentFact(factObj);
+      setFactHistory((prev) => {
+        if (prev[0]?.fact === factObj.fact) return prev;
+        return [factObj, ...prev].slice(0, 10);
+      });
+
+      if (!isInitial) showSuccess("New Health Fact!", `Topic: ${data.title}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load fact";
+      setError(message);
+      showError("Couldn't load fact", message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    getRandomFact();
-    // Show welcome toast when page loads
-    showInfo("Welcome to Health Facts!", "Learn fascinating insights about the human body");
+    fetchFact(true);
+    showInfo("Welcome to Health Facts!", "Powered by Wikipedia — real medical knowledge");
   }, []);
+
+  const gradient = currentFact ? getCategoryStyle(currentFact.category) : "from-primary to-primary-glow";
+  const Icon = currentFact ? getCategoryIcon(currentFact.category) : Heart;
 
   return (
     <div className="space-y-6">
@@ -151,37 +160,88 @@ const HealthFacts = () => {
           Did You Know? Health Facts
         </h1>
         <p className="text-muted-foreground mt-2">
-          Fascinating insights about the human body and latest health discoveries
+          Real medical knowledge from Wikipedia — a different topic every time, no repeats
         </p>
       </div>
 
-      {currentFact && (
-        <Card className="border-2 bg-gradient-to-br from-background to-accent/20">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="space-y-2 flex-1">
-                <Badge className={`bg-gradient-to-r ${currentFact.color} text-white border-0`}>
+      {/* Current Fact */}
+      <Card className="border-2 bg-gradient-to-br from-background to-accent/20">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 flex-1">
+              {currentFact && (
+                <Badge className={`bg-gradient-to-r ${gradient} text-white border-0`}>
                   {currentFact.category}
                 </Badge>
-                <CardTitle className="text-2xl">Today's Health Fact</CardTitle>
+              )}
+              <CardTitle className="text-2xl">
+                {loading ? "Loading..." : currentFact?.title ?? "Health Fact"}
+              </CardTitle>
+              {currentFact && (
+                <a
+                  href={currentFact.fullUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  Read full article on Wikipedia
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+
+            {/* Thumbnail if available, else icon */}
+            {currentFact?.thumbnail && !loading ? (
+              <img
+                src={currentFact.thumbnail}
+                alt={currentFact.title}
+                className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
+                {loading
+                  ? <Loader2 className="w-8 h-8 text-white animate-spin" />
+                  : <Icon className="w-8 h-8 text-white" />
+                }
               </div>
-              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${currentFact.color} flex items-center justify-center`}>
-                <currentFact.icon className="w-8 h-8 text-white" />
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {error ? (
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/30">
+              <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-destructive">Failed to load fact</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{error}</p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-lg leading-relaxed text-foreground">
-              {currentFact.fact}
-            </p>
-            <Button onClick={getRandomFact} className="w-full gap-2">
-              <RefreshCw className="w-4 h-4" />
-              Show Me Another Fact
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+          ) : loading ? (
+            <div className="space-y-2 animate-pulse">
+              <div className="h-4 bg-muted rounded w-full" />
+              <div className="h-4 bg-muted rounded w-5/6" />
+              <div className="h-4 bg-muted rounded w-3/4" />
+            </div>
+          ) : currentFact ? (
+            <p className="text-lg leading-relaxed text-foreground">{currentFact.fact}</p>
+          ) : null}
 
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Source: Wikipedia (CC BY-SA)</span>
+            <span>{HEALTH_TOPICS.length - shownIndices.size} topics remaining this cycle</span>
+          </div>
+
+          <Button onClick={() => fetchFact(false)} disabled={loading} className="w-full gap-2">
+            {loading
+              ? <><Loader2 className="w-4 h-4 animate-spin" />Loading fact...</>
+              : <><RefreshCw className="w-4 h-4" />Show Me Another Fact</>
+            }
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Category highlight cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
           <CardHeader>
@@ -191,9 +251,7 @@ const HealthFacts = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Learn about anatomy, physiology, and how your body works
-            </p>
+            <p className="text-sm text-muted-foreground">Anatomy, physiology, and how your body works</p>
           </CardContent>
         </Card>
 
@@ -205,9 +263,7 @@ const HealthFacts = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Discover neuroscience and mental health insights
-            </p>
+            <p className="text-sm text-muted-foreground">Neuroscience, mental health, and cognition</p>
           </CardContent>
         </Card>
 
@@ -219,13 +275,12 @@ const HealthFacts = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Stay updated with cutting-edge medical discoveries
-            </p>
+            <p className="text-sm text-muted-foreground">Cutting-edge discoveries and breakthroughs</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* History */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -241,24 +296,36 @@ const HealthFacts = () => {
             </p>
           ) : (
             <div className="space-y-3">
-              {factHistory.map((fact, index) => (
-                <div
-                  key={index}
-                  className="p-4 rounded-lg border border-border hover:bg-accent transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${fact.color} flex items-center justify-center flex-shrink-0`}>
-                      <fact.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <Badge variant="outline" className="mb-2">
-                        {fact.category}
-                      </Badge>
-                      <p className="text-sm text-foreground">{fact.fact}</p>
+              {factHistory.map((fact, index) => {
+                const FactIcon = getCategoryIcon(fact.category);
+                const factGradient = getCategoryStyle(fact.category);
+                return (
+                  <div
+                    key={`${fact.title}-${index}`}
+                    className="p-4 rounded-lg border border-border hover:bg-accent transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${factGradient} flex items-center justify-center flex-shrink-0`}>
+                        <FactIcon className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <Badge variant="outline">{fact.category}</Badge>
+                          <a
+                            href={fact.fullUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            {fact.title} <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                        <p className="text-sm text-foreground">{fact.fact}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
