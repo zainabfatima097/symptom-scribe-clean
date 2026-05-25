@@ -461,28 +461,27 @@ const BrainGames = () => {
   };
 
   const checkMathAnswer = () => {
-    const correct = mathQuestion.num1 + mathQuestion.num2;
-    const userAnswer = parseInt(mathQuestion.answer);
-    if (userAnswer === correct) {
-      const newScore = mathScore + 1;
-      setMathScore(newScore);
-      showSuccess("✓ Correct! ✓", `Score: ${newScore}`);
-      toast({
-        title: "✓ Correct!",
-        description: `Score: ${newScore}`,
-      });
-      generateMathQuestion();
-    } else {
-      showError("✗ Incorrect", `The answer was ${correct}. Keep practicing!`);
-      toast({
-        title: "✗ Incorrect",
-        description: `The answer was ${correct}`,
-        variant: "destructive",
-      });
-      generateMathQuestion();
-    }
-  };
-
+  const correct = mathQuestion.num1 + mathQuestion.num2;
+  const userAnswer = parseInt(mathQuestion.answer);
+  if (userAnswer === correct) {
+    const newScore = mathScore + 1;
+    setMathScore(newScore);
+    showSuccess("✓ Correct! ✓", `Score: ${newScore}`);
+    toast({
+      title: "✓ Correct!",
+      description: `Score: ${newScore}`,
+    });
+    generateMathQuestion();
+  } else {
+    showError("✗ Incorrect", `The answer was ${correct}. Keep practicing!`);
+    toast({
+      title: "✗ Incorrect",
+      description: `The answer was ${correct}`,
+      variant: "destructive",
+    });
+    generateMathQuestion();
+  }
+};
   const games = [
     { id: "memory", name: "Memory Match", icon: Brain, description: "Match pairs of health-themed cards", color: "from-blue-500 to-cyan-500" },
     { id: "math", name: "Quick Math", icon: Target, description: "Solve mental math problems", color: "from-purple-500 to-pink-500" },
@@ -755,8 +754,8 @@ const BrainGames = () => {
             <div className="text-center space-y-4">
               <div className="text-5xl font-bold text-foreground">{mathQuestion.num1} + {mathQuestion.num2} = ?</div>
               <div className="flex gap-4 items-center justify-center max-w-md mx-auto">
-                <input type="number" value={mathQuestion.answer || ""} onChange={(e) => setMathQuestion({ ...mathQuestion, answer: parseInt(e.target.value) || 0 })} onKeyPress={(e) => e.key === "Enter" && checkMathAnswer()} className="flex-1 px-4 py-3 text-2xl text-center border-2 border-border rounded-xl bg-background focus:outline-none focus:border-primary" placeholder="?" autoFocus />
-                <Button onClick={checkMathAnswer} size="lg" className="px-8">Check</Button>
+                <input type="number" value={mathQuestion.answer} onChange={(e) => setMathQuestion({ ...mathQuestion, answer: e.target.value })} onKeyPress={(e) => e.key === "Enter" && checkMathAnswer()} className="flex-1 px-4 py-3 text-2xl text-center border-2 border-border rounded-xl bg-background focus:outline-none focus:border-primary" placeholder="?" autoFocus />
+             <Button onClick={checkMathAnswer} size="lg" className="px-8">Check</Button>
               </div>
             </div>
           </CardContent>

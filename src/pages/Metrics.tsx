@@ -71,9 +71,9 @@ const Metrics = () => {
   const getTrend = (currentEntry: MetricEntry, allEntries: MetricEntry[]) => {
     const sameType = allEntries.filter((e) => e.metric_type === currentEntry.metric_type);
     const currentIndex = sameType.findIndex((e) => e.id === currentEntry.id);
-    const prevEntry = sameType[currentIndex + 1]; // sorted desc, so next index = older reading
+    const prevEntry = sameType[currentIndex + 1];
 
-    if (!prevEntry) return null; // first ever entry for this metric type
+    if (!prevEntry) return null;
 
     const curr =
       currentEntry.metric_type === "blood_pressure"
@@ -120,13 +120,11 @@ const Metrics = () => {
       const metricLabel = metricTypes.find((m) => m.value === metricType)?.label;
       showSuccess(`${metricLabel} Recorded`, "Your health metric has been saved successfully.");
 
-      // Reset form
       setValue("");
       setSystolic("");
       setDiastolic("");
       setNotes("");
 
-      // Refresh history to show the new entry with trend
       fetchHistory();
     } catch (error) {
       console.error("Error saving metric:", error);
@@ -255,7 +253,7 @@ const Metrics = () => {
         <CardHeader>
           <CardTitle>Recent Readings</CardTitle>
           <CardDescription>
-            Your last 30 recorded metrics 
+            Your last 30 recorded metrics
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -295,13 +293,13 @@ const Metrics = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold">{getDisplayValue(entry)}</span>
                       {trend === "up" && (
-                        <TrendingUp className="w-4 h-4 text-red-400" title="Higher than previous reading" />
+                        <TrendingUp className="w-4 h-4 text-red-400" aria-label="Higher than previous reading" />
                       )}
                       {trend === "down" && (
-                        <TrendingDown className="w-4 h-4 text-green-400" title="Lower than previous reading" />
+                        <TrendingDown className="w-4 h-4 text-green-400" aria-label="Lower than previous reading" />
                       )}
                       {trend === "same" && (
-                        <Minus className="w-4 h-4 text-muted-foreground" title="Same as previous reading" />
+                        <Minus className="w-4 h-4 text-muted-foreground" aria-label="Same as previous reading" />
                       )}
                       {trend === null && (
                         <span className="text-xs text-muted-foreground">first entry</span>
